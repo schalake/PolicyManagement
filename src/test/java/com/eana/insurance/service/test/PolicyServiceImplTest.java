@@ -1,5 +1,6 @@
 package com.eana.insurance.service.test;
 
+import com.eana.insurance.aws.AWSLocalStackServices;
 import com.eana.insurance.entity.Policy;
 import com.eana.insurance.mapper.PolicyMapper;
 import com.eana.insurance.repository.PolicyRepository;
@@ -19,8 +20,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 public class PolicyServiceImplTest {
@@ -30,6 +31,10 @@ public class PolicyServiceImplTest {
 
     @MockitoBean
     private PolicyRepository policyRepository;
+
+    @MockitoBean
+    private AWSLocalStackServices awsLocalStackServices;
+
 
     private PolicyRequestDto newPolicyRequestDto;
     private PolicyRequestDto savedPolicyRequestDto;
@@ -59,11 +64,14 @@ public class PolicyServiceImplTest {
         Policy savedPolicy = PolicyMapper.INSTANCE.policyRequestDtoToPolicy(savedPolicyRequestDto);
 
         Mockito.when(policyRepository.save(newPolicy)).thenReturn(savedPolicy);
+        // Mock the behavior of AWSLocalStackServices (simulate publishing to SNS and saving to DynamoDB)
+        doNothing().when(awsLocalStackServices).publishToSNSANDSaveToDynamo(anyString());
+
         policyService.createPolicy(newPolicyRequestDto);
 
         assertEquals("FName", savedPolicy.getFirstName());
         assertEquals("LName", savedPolicy.getLastName());
-        //Mockito.verify(policyRepository,Mockito.times(1)).save(savedPolicy);
+        verify(awsLocalStackServices, times(1)).publishToSNSANDSaveToDynamo(anyString());
     }
 
     @Test
