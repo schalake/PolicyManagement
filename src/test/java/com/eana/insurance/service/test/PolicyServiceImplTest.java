@@ -50,7 +50,7 @@ public class PolicyServiceImplTest {
     }
 
     @Test
-    public void createPolicyTest() {
+    public void createPolicyTest() throws Exception {
 //        try (MockedStatic<PolicyNumberGenerator> mockedGenerator = mockStatic(PolicyNumberGenerator.class)) {
 //            mockedGenerator.when(PolicyNumberGenerator::generatePolicyNumber).thenReturn(policyNumber);
 //        }
