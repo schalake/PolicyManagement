@@ -9,10 +9,10 @@ import com.eana.insurance.service.PolicyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -27,12 +27,11 @@ public class PolicyServiceImplTest {
     @InjectMocks
     private PolicyServiceImpl policyService;
 
-    @MockitoBean
+    @Mock
     private PolicyRepository policyRepository;
 
-    @MockitoBean
+    @Mock
     private AWSLocalStackServices awsLocalStackServices;
-
 
     private PolicyRequestDto newPolicyRequestDto;
     private PolicyRequestDto savedPolicyRequestDto;
@@ -54,15 +53,13 @@ public class PolicyServiceImplTest {
 
     @Test
     public void createPolicyTest() throws Exception {
-//        try (MockedStatic<PolicyNumberGenerator> mockedGenerator = mockStatic(PolicyNumberGenerator.class)) {
-//            mockedGenerator.when(PolicyNumberGenerator::generatePolicyNumber).thenReturn(policyNumber);
-//        }
 
         Policy newPolicy = PolicyMapper.INSTANCE.policyRequestDtoToPolicy(newPolicyRequestDto);
         Policy savedPolicy = PolicyMapper.INSTANCE.policyRequestDtoToPolicy(savedPolicyRequestDto);
+        savedPolicy.setId(1L); // Mock setting an ID (e.g., auto-generated ID)
 
-        Mockito.when(policyRepository.save(newPolicy)).thenReturn(savedPolicy);
-        // Mock the behavior of AWSLocalStackServices (simulate publishing to SNS and saving to DynamoDB)
+        Mockito.when(policyRepository.save(Mockito.any(Policy.class))).thenReturn(savedPolicy);
+        // Mock the behavior of AWSLocalStackServices (publishing to SNS and saving to DynamoDB)
         doNothing().when(awsLocalStackServices).publishToSNSANDSaveToDynamo(anyString());
 
         policyService.createPolicy(newPolicyRequestDto);
