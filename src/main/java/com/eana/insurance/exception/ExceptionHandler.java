@@ -34,12 +34,15 @@ public class ExceptionHandler extends ResponseEntityExceptionHandler {
         responseBody.put("timestamp", Instant.now().toString());
         responseBody.put("status", status.value());
         responseBody.put("error", status.value());
+
+        Map<String, String> validationErrors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String message = error.getDefaultMessage();
-            responseBody.put(fieldName, message);
+            validationErrors.put(fieldName, message);
             logger.debug("Field validation error - {}: {}", fieldName, message);
         });
+        responseBody.put("errors", validationErrors);
         return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
     }
 
