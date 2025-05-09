@@ -1,6 +1,8 @@
 package com.eana.insurance.aws;
 
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -21,6 +23,8 @@ import java.util.UUID;
 
 @Service
 public class AWSLocalStackServices {
+
+    private static final Logger logger = LoggerFactory.getLogger(AWSLocalStackServices.class);
 
     @Value("${aws.region:us-east-1}")
     private String regionValue;
@@ -47,24 +51,29 @@ public class AWSLocalStackServices {
         this.creds = StaticCredentialsProvider.create(credentials);
         this.localstack = URI.create(localstackEndpoint);
         this.region = Region.of(regionValue);
+        logger.info("Initialized AWSLocalStackServices with region: {}, endpoint: {}", regionValue, localstackEndpoint);
     }
 
     public void publishToSNSANDSaveToDynamo(String requestJSONString) throws Exception {
-        var sns = SnsClient.builder().credentialsProvider(creds).endpointOverride(localstack).region(region).build();
-        var sqs = SqsClient.builder().credentialsProvider(creds).endpointOverride(localstack).region(region).build();
+        logger.info("Starting SNS->SQS->DynamoDB flow...");
 
+        SnsClient sns = SnsClient.builder().credentialsProvider(creds).endpointOverride(localstack).region(region).build();
+        SqsClient sqs = SqsClient.builder().credentialsProvider(creds).endpointOverride(localstack).region(region).build();
 
         // 1. Create Topic
         String topicArn = sns.createTopic(CreateTopicRequest.builder().name(topicName).build()).topicArn();
+        logger.debug("SNS topic created/found: {}", topicArn);
 
         // 2. Create Queue
         String queueUrl = sqs.createQueue(CreateQueueRequest.builder().queueName(queueName).build()).queueUrl();
+        logger.debug("SQS queue created/found: {}", queueUrl);
 
         // 3. Get Queue ARN
         String queueArn = sqs.getQueueAttributes(GetQueueAttributesRequest.builder()
                         .queueUrl(queueUrl)
                         .attributeNames(QueueAttributeName.QUEUE_ARN).build())
                 .attributes().get(QueueAttributeName.QUEUE_ARN);
+        logger.debug("SQS queue ARN: {}", queueArn);
 
         // 4. Subscribe SQS to SNS
         ListSubscriptionsByTopicResponse subs = sns.listSubscriptionsByTopic(
@@ -74,6 +83,7 @@ public class AWSLocalStackServices {
                 .anyMatch(sub -> sub.endpoint().equals(queueArn) && sub.protocol().equals("sqs"));
 
         if (!alreadySubscribed) {
+            logger.info("Subscribing SQS to SNS...");
             Map<QueueAttributeName, String> attributes = Map.of(
                     QueueAttributeName.POLICY, createSQSPolicy(queueArn, topicArn)
             );
@@ -87,6 +97,8 @@ public class AWSLocalStackServices {
                     .protocol("sqs")
                     .endpoint(queueArn)
                     .build());
+        } else {
+            logger.info("SQS is already subscribed to SNS.");
         }
 
         // 5. Publish a Message to SNS
@@ -95,7 +107,8 @@ public class AWSLocalStackServices {
                 .message(requestJSONString)
                 .build());
 
-        System.out.println("Publish message from SNS: " + requestJSONString);
+        //System.out.println("Published message to SNS: " + requestJSONString);
+        logger.info("Published message to SNS: {}", requestJSONString);
 
         // 6. Receive Message from SQS
         List<Message> messages = sqs.receiveMessage(ReceiveMessageRequest.builder()
@@ -107,14 +120,16 @@ public class AWSLocalStackServices {
         // 7. Put item in DynamoDB
         if (!messages.isEmpty()) {
             String msg = messages.get(0).body();
-            System.out.println("Received from SQS: " + msg);
+            //System.out.println("Received from SQS: " + msg);
+            logger.info("Received message from SQS: {}", msg);
 
             DynamoDbClient dynamo = DynamoDbClient.builder().credentialsProvider(creds).endpointOverride(localstack).region(region).build();
             // Check if table exists and create if it doesn't
             if (!doesTableExist(dynamo, dynamoTable)) {
                 createTable(dynamo, dynamoTable);
             } else {
-                System.out.println("Table " + dynamoTable + " already exists.");
+                //System.out.println("Table " + dynamoTable + " already exists.");
+                logger.info("Table '{}' already exists.", dynamoTable);
             }
 
             String uuid = UUID.randomUUID().toString();
@@ -126,7 +141,8 @@ public class AWSLocalStackServices {
                     ))
                     .build());
 
-            System.out.println("Message saved to DynamoDB with id: " + uuid);
+            //System.out.println("Message saved to DynamoDB with id: " + uuid);
+            logger.info("Saved message to DynamoDB with id: {}", uuid);
 
             //8. Delete message from SQS to prevent reprocessing
             sqs.deleteMessage(DeleteMessageRequest.builder()
@@ -134,7 +150,10 @@ public class AWSLocalStackServices {
                     .receiptHandle(messages.get(0).receiptHandle())
                     .build());
 
-            System.out.println("Message deleted from SQS.");
+            //System.out.println("Deleted message from SQS.");
+            logger.info("Deleted message from SQS.");
+        } else {
+            logger.warn("No messages received from SQS.");
         }
     }
 
@@ -164,7 +183,8 @@ public class AWSLocalStackServices {
             ListTablesResponse listTablesResponse = dynamoDbClient.listTables();
             return listTablesResponse.tableNames().contains(tableName);
         } catch (SdkClientException e) {
-            System.out.println("Error listing tables: " + e.getMessage());
+            //System.out.println("Error listing tables: " + e.getMessage());
+            logger.error("Error listing DynamoDB tables: {}", e.getMessage());
             return false;
         }
     }
@@ -191,9 +211,11 @@ public class AWSLocalStackServices {
 
             // Create the table
             dynamoDbClient.createTable(createTableRequest);
-            System.out.println("Table " + tableName + " created successfully.");
+            //System.out.println("Table " + tableName + " created successfully.");
+            logger.info("Created DynamoDB table '{}'.", tableName);
         } catch (SdkClientException e) {
-            System.out.println("Error creating table: " + e.getMessage());
+            //System.out.println("Error creating DynamoDB table: " + e.getMessage());
+            logger.error("Error creating DynamoDB table '{}': {}", tableName, e.getMessage());
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.eana.insurance.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -17,6 +19,7 @@ import java.util.Map;
 
 @ControllerAdvice
 public class ExceptionHandler extends ResponseEntityExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ExceptionHandler.class);
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -24,6 +27,8 @@ public class ExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode status,
             WebRequest request) {
+
+        logger.warn("Validation failed: {}", ex.getMessage());
 
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("timestamp", Instant.now().toString());
@@ -33,6 +38,7 @@ public class ExceptionHandler extends ResponseEntityExceptionHandler {
             String fieldName = ((FieldError) error).getField();
             String message = error.getDefaultMessage();
             responseBody.put(fieldName, message);
+            logger.debug("Field validation error - {}: {}", fieldName, message);
         });
         return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
     }
@@ -44,6 +50,8 @@ public class ExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode status,
             WebRequest request) {
+
+        logger.error("Malformed JSON request: {}", ex.getMessage(), ex);
 
         String message = "Malformed request";
         if (ex.getCause() instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException) {

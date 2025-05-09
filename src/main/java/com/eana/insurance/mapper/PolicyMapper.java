@@ -7,9 +7,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
-import java.util.List;
-import java.util.Optional;
-
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface PolicyMapper {
     PolicyMapper INSTANCE = Mappers.getMapper(PolicyMapper.class);
