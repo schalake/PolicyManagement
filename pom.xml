@@ -130,4 +130,40 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>local</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<env>local</env>
+			</properties>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>3.1.0</version>
+						<executions>
+							<execution>
+								<id>create-sqs-sns-resources</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>C:\Program Files\Git\usr\bin\bash.exe</executable>
+									<arguments>
+										<argument>${project.basedir}/scripts/setup-sns-sqs.sh</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

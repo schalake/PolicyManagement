@@ -26,43 +26,33 @@ public class PolicyController {
     private PolicyService policyService;
 
     @PostMapping("/policies")
-    public ResponseEntity<?> createPolicy(@RequestBody @Valid PolicyRequestDto policyRequestDto){
+    public ResponseEntity<?> createPolicy(@RequestBody @Valid PolicyRequestDto policyRequestDto) throws Exception {
         logger.info("Received request to create policy: {}", policyRequestDto);
-        try {
-            PolicyResponseDto savedPolicyResponse = policyService.createPolicy(policyRequestDto);
-            logger.info("Policy created with number: {}", savedPolicyResponse.getPolicyNumber());
+        PolicyResponseDto savedPolicyResponse = policyService.createPolicy(policyRequestDto);
+        logger.info("Policy created with number: {}", savedPolicyResponse.getPolicyNumber());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Policy created successfully.");
-            response.put("data", savedPolicyResponse);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            logger.error("Error while creating policy: ", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Policy created successfully.");
+        response.put("data", savedPolicyResponse);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/policies/{policyNumber}")
-    public ResponseEntity<?> getStudentById(@PathVariable String policyNumber){
+    public ResponseEntity<?> getStudentById(@PathVariable String policyNumber) {
         logger.info("Fetching policy with number: {}", policyNumber);
-        try {
-            Optional<PolicyResponseDto> policyData = policyService.getPolicy(policyNumber);
-            if (policyData.isEmpty()) {
-                logger.warn("Policy not found for number: {}", policyNumber);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Policy does not exist.");
-            }
-
-            logger.info("Policy found: {}", policyData.get());
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Policy retrieved successfully.");
-            response.put("data", policyData.get());
-
-            //return new ResponseEntity<>(policyData.get(), HttpStatus.OK);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-
-        } catch (Exception e) {
-            logger.error("Error while retrieving policy: ", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        Optional<PolicyResponseDto> policyData = policyService.getPolicy(policyNumber);
+        if (policyData.isEmpty()) {
+            logger.warn("Policy not found for number: {}", policyNumber);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Policy does not exist.");
         }
+
+        logger.info("Policy found: {}", policyData.get());
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Policy retrieved successfully.");
+        response.put("data", policyData.get());
+
+        //return new ResponseEntity<>(policyData.get(), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
     }
 }

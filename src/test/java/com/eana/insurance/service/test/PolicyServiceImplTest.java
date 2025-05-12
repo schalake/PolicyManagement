@@ -1,6 +1,6 @@
 package com.eana.insurance.service.test;
 
-import com.eana.insurance.aws.AWSLocalStackServices;
+import com.eana.insurance.aws.AWSPublishMessage;
 import com.eana.insurance.entity.Policy;
 import com.eana.insurance.mapper.PolicyMapper;
 import com.eana.insurance.repository.PolicyRepository;
@@ -31,7 +31,7 @@ public class PolicyServiceImplTest {
     private PolicyRepository policyRepository;
 
     @Mock
-    private AWSLocalStackServices awsLocalStackServices;
+    private AWSPublishMessage awsPublishMessage;
 
     private PolicyRequestDto newPolicyRequestDto;
     private PolicyRequestDto savedPolicyRequestDto;
@@ -60,13 +60,13 @@ public class PolicyServiceImplTest {
 
         Mockito.when(policyRepository.save(Mockito.any(Policy.class))).thenReturn(savedPolicy);
         // Mock the behavior of AWSLocalStackServices (publishing to SNS and saving to DynamoDB)
-        doNothing().when(awsLocalStackServices).publishToSNSANDSaveToDynamo(anyString());
+        doNothing().when(awsPublishMessage).publishRequestToSNS(anyString());
 
         policyService.createPolicy(newPolicyRequestDto);
 
         assertEquals("FName", savedPolicy.getFirstName());
         assertEquals("LName", savedPolicy.getLastName());
-        verify(awsLocalStackServices, times(1)).publishToSNSANDSaveToDynamo(anyString());
+        verify(awsPublishMessage, times(1)).publishRequestToSNS(anyString());
     }
 
     @Test

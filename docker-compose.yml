@@ -6,7 +6,6 @@ services:
     container_name: localstack
     ports:
       - "4566:4566"   # LocalStack edge port
-      - "4571:4571"
     environment:
       - SERVICES=sns,sqs,dynamodb
       - DEBUG=1

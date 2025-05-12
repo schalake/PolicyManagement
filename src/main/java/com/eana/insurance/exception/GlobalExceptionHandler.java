@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -18,8 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
-public class ExceptionHandler extends ResponseEntityExceptionHandler {
-    private static final Logger logger = LoggerFactory.getLogger(ExceptionHandler.class);
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -68,5 +69,33 @@ public class ExceptionHandler extends ResponseEntityExceptionHandler {
         responseBody.put("errors", message);
 
         return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle all application-specific exceptions
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
+        logger.warn("Application exception: {}", ex.getMessage());
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("timestamp", Instant.now().toString());
+        responseBody.put("status", HttpStatus.BAD_REQUEST.value());
+        responseBody.put("error", "Application Error");
+        responseBody.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
+    }
+
+    // Catch-all for all unhandled exceptions
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
+        logger.error("Unexpected error: {}", ex.getMessage(), ex);
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("timestamp", Instant.now().toString());
+        responseBody.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        responseBody.put("error", "Internal Server Error");
+        responseBody.put("message", "Something went wrong. Please try again.");
+
+        return new ResponseEntity<>(responseBody, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
