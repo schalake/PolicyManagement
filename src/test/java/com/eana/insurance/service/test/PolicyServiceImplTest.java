@@ -1,6 +1,6 @@
 package com.eana.insurance.service.test;
 
-import com.eana.insurance.aws.AWSPublishMessage;
+import com.eana.insurance.publisher.SQSPublishMessage;
 import com.eana.insurance.entity.Policy;
 import com.eana.insurance.mapper.PolicyMapper;
 import com.eana.insurance.repository.PolicyRepository;
@@ -31,7 +31,7 @@ public class PolicyServiceImplTest {
     private PolicyRepository policyRepository;
 
     @Mock
-    private AWSPublishMessage awsPublishMessage;
+    private SQSPublishMessage awsPublishMessage;
 
     private PolicyRequestDto newPolicyRequestDto;
     private PolicyRequestDto savedPolicyRequestDto;

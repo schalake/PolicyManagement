@@ -6,6 +6,7 @@ echo "setup-sns-sqs.sh script is running..."
 TOPIC_NAME="PolicyTopic"
 QUEUE_NAME="PolicyQueue"
 LOCALSTACK_ENDPOINT="http://localhost:4566"
+
 echo "Creating SQS queue..."
 QUEUE_URL=$(aws sqs create-queue \
   --queue-name "$QUEUE_NAME" \

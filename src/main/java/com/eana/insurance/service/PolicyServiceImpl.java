@@ -1,6 +1,6 @@
 package com.eana.insurance.service;
 
-import com.eana.insurance.aws.AWSPublishMessage;
+import com.eana.insurance.publisher.SQSPublishMessage;
 import com.eana.insurance.entity.Policy;
 import com.eana.insurance.mapper.PolicyMapper;
 import com.eana.insurance.repository.PolicyRepository;
@@ -24,7 +24,7 @@ public class PolicyServiceImpl implements PolicyService {
     PolicyRepository policyRepository;
 
     @Autowired
-    AWSPublishMessage awsLocalStackServices;
+    SQSPublishMessage sqsPublishMessage;
 
     @Override
     public PolicyResponseDto createPolicy(PolicyRequestDto policyRequestDto) throws Exception {
@@ -42,7 +42,7 @@ public class PolicyServiceImpl implements PolicyService {
 
         // Send JSON string message to SNS -> SQS -> Dynamo DB.
         logger.info("Publishing message to AWS SNS via LocalStack...");
-        awsLocalStackServices.publishRequestToSNS(requestJSONString);
+        sqsPublishMessage.publishRequestToSNS(requestJSONString);
         logger.info("Message published.");
 
         return PolicyMapper.INSTANCE.policyToPolicyResponseDto(savedPolicy);

@@ -9,7 +9,8 @@ services:
     environment:
       - SERVICES=sns,sqs,dynamodb
       - DEBUG=1
+      #- LEGACY_SQS_URLS=true
       - DATA_DIR=/tmp/localstack/data
     volumes:
-      - "./localstack:/tmp/localstack"
+      #- "./localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
